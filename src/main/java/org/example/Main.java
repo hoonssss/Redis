@@ -1,5 +1,6 @@
 package org.example;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import redis.clients.jedis.Jedis;
@@ -75,7 +76,7 @@ public class Main {
 
                 System.out.println(jedis.scard("users:500:follow"));
 
-                Set<String> sinter = jedis.sinter("users:500:follow", "users:100:follow"); //500,100 공통 값
+                Set<String> sinter = jedis.sinter("users:500:follow", "users:100:follow"); //500,100 공통
                 sinter.forEach(System.out::println);
 
                 Set<String> smembers = jedis.smembers("users:500:follow");
@@ -84,7 +85,29 @@ public class Main {
                 System.out.println(jedis.sismember("users:500:follow", "200")); //return type boolean
                 System.out.println(jedis.sismember("users:500:follow", "100")); //remove -> return result false
 
+                //HASH
+                jedis.hset("users:2:info", "name", "jh"); //name
+                var info = new HashMap<String, String>();
+                info.put("email","wogns8030@naver.com");
+                info.put("phone","010-xxxx-xxxx");
+                jedis.hset("users:2:info",info); //email, phone
+                System.out.println(
+                    "jedis.hgetAll(\"users:2:info\") = " + jedis.hgetAll("users:2:info"));
 
+                //DELETE
+                jedis.hdel("users:2:info","name"); //name 삭제
+                System.out.println(
+                    "jedis.hgetAll(\"users:2:info\") = " + jedis.hgetAll("users:2:info"));
+
+                //HGet
+                System.out.println( //email get
+                    "jedis.hget(\"users:2:info\",\"email\") = " + jedis.hget("users:2:info",
+                        "email"));
+
+                //hincr
+                jedis.hincrBy("users:2:info","visits",1); //visits 1 증가
+                System.out.println(
+                    "jedis.hgetAll(\"users:2:info\") = " + jedis.hgetAll("users:2:info"));
             }
         }
     }
