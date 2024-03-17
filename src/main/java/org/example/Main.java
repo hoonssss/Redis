@@ -3,6 +3,7 @@ package org.example;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.IntStream;
 import redis.clients.jedis.GeoCoordinate;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -168,6 +169,28 @@ public class Main {
 
                 //삭제
                 jedis.unlink("stores:geo");
+                System.out.println("-------------------------------");
+
+                //Bitmap Test 0 1
+                jedis.setbit("request-somepage-20240317", 100 ,true); //true -> 1
+                jedis.setbit("request-somepage-20240317", 200 ,true);
+                jedis.setbit("request-somepage-20240317", 300 ,true);
+                jedis.setbit("request-somepage-20240317", 400 ,false);
+                System.out.println(jedis.getbit("request-somepage-20240317", 100)); //true
+                System.out.println(jedis.getbit("request-somepage-20240317", 50)); //false
+                System.out.println(jedis.getbit("request-somepage-20240317", 400)); //false
+                System.out.println(jedis.bitcount("request-somepage-20240317"));
+
+                //bitmap vs set memory
+                IntStream.rangeClosed(0,100000).forEach(i -> {
+                    pipeline.sadd("request-somepage-set-20240317", String.valueOf(i), "1"); //set
+                    pipeline.setbit("request-somepage-bit-20240317", i, true); //bit
+
+                    if(i == 1000){
+                        pipeline.sync(); //pipeline 동기화
+                    }
+                });
+                pipeline.sync();
             }
         }
     }
