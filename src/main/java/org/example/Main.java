@@ -3,9 +3,13 @@ package org.example;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import redis.clients.jedis.GeoCoordinate;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Pipeline;
+import redis.clients.jedis.args.GeoUnit;
+import redis.clients.jedis.params.GeoSearchParam;
+import redis.clients.jedis.resps.GeoRadiusResponse;
 import redis.clients.jedis.resps.Tuple;
 
 public class Main {
@@ -43,7 +47,7 @@ public class Main {
                 List<Object> objects = pipeline.syncAndReturnAll();
                 objects.forEach(i -> System.out.println(i.toString()));
 
-                //list
+                //list Test
                 //1. stack
                 jedis.rpush("stack1", "aaaa");
                 jedis.rpush("stack1", "bbbb");
@@ -70,7 +74,7 @@ public class Main {
                     blpop.forEach(System.out::println);
                 }
 
-                //Set(unique) 중복값 허용 X 정렬 X
+                //Set(unique) 중복값 허용 X 정렬 X Test
                 jedis.sadd("users:500:follow", "100", "200", "300");
                 jedis.sadd("users:100:follow", "100", "200", "300");
                 jedis.srem("users:500:follow", "100"); //remove
@@ -89,7 +93,7 @@ public class Main {
                 System.out.println(
                     jedis.sismember("users:500:follow", "100")); //remove -> return result false
 
-                //HASH
+                //HASH Test
                 jedis.hset("users:2:info", "name", "jh"); //name
                 var info = new HashMap<String, String>();
                 info.put("email", "wogns8030@naver.com");
@@ -113,7 +117,7 @@ public class Main {
                 System.out.println(
                     "jedis.hgetAll(\"users:2:info\") = " + jedis.hgetAll("users:2:info"));
 
-                //Sorted Sets
+                //Sorted Sets Test
                 jedis.zadd("game1:scores", 100, "users1");
                 jedis.zadd("game1:scores", 200, "users2");
                 jedis.zadd("game1:scores", 300, "users3");
@@ -146,7 +150,24 @@ public class Main {
                 jedis.zincrby("game2:scores",100.0,"user4"); //user4 100 increment
                 List<Tuple> tuples1 = jedis.zrangeWithScores("game2:scores", 0, Long.MAX_VALUE);
                 tuples1.forEach(i -> System.out.println("%s, %f".formatted(i.getElement(), i.getScore())));
+                System.out.println("-------------------------------");
 
+                //Geospatial Test 위치(좌표)정보 저장
+                jedis.geoadd("stores:geo",127.02985530619755,37.49911212874,"awesomePlace1");
+                jedis.geoadd("stores:geo",127.0333352287619,37.491921163986234,"awesomePlace2");
+                Double geodist = jedis.geodist("stores:geo", "awesomePlace1", "awesomePlace2");
+                System.out.println(geodist);
+
+                //500M 반경 내 위치 정보 반환
+                List<GeoRadiusResponse> geosearch = jedis.geosearch("stores:geo",
+                    new GeoSearchParam()
+                        .fromLonLat(new GeoCoordinate(127.033, 37.495))
+                        .byRadius(500, GeoUnit.M)
+                        .withCoord());
+                geosearch.forEach(i -> System.out.println("%s %f %f".formatted(i.getMemberByString(), i.getCoordinate().getLongitude(),i.getCoordinate().getLatitude())));
+
+                //삭제
+                jedis.unlink("stores:geo");
             }
         }
     }
